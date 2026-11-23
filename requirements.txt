@@ -1,0 +1,10 @@
+Flask==3.0.3
+Flask-SQLAlchemy==3.1.1
+SQLAlchemy==2.0.36
+Flask-WTF==1.2.1
+argon2-cffi==23.1.0
+pyotp==2.9.0
+qrcode[pil]==7.4.2
+python-dotenv==1.0.1
+gunicorn==22.0.0
+waitress==3.0.0

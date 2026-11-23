@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Panel{% endblock %}
+{% block content %}
+<h2>Panel</h2>
+<div class="grid">
+  {% for s, n in counts.items() %}
+  <div class="card"><div class="muted">{{ s }}</div><strong style="font-size:24px">{{ n }}</strong></div>
+  {% endfor %}
+</div>
+
+<div class="card">
+  <h3>Mənim tapşırıqlarım</h3>
+  {% if my_tasks %}
+  <table><tr><th>No</th><th>Başlıq</th><th>Status</th></tr>
+  {% for r in my_tasks %}
+    <tr><td><a href="{{ url_for('repairs.detail', rid=r.id) }}">{{ r.number }}</a></td><td>{{ r.title }}</td><td>{{ r.status }}</td></tr>
+  {% endfor %}
+  </table>
+  {% else %}<p class="muted">Aktiv tapşırıq yoxdur.</p>{% endif %}
+</div>
+
+{% if pending %}
+<div class="card">
+  <h3>Təsdiq gözləyən işlər</h3>
+  <table><tr><th>No</th><th>Başlıq</th><th>Tamamlanma</th></tr>
+  {% for r in pending %}
+    <tr><td><a href="{{ url_for('repairs.detail', rid=r.id) }}">{{ r.number }}</a></td><td>{{ r.title }}</td>
+    <td>{{ r.completed_at.strftime('%d.%m.%Y %H:%M') if r.completed_at else '' }}</td></tr>
+  {% endfor %}
+  </table>
+</div>
+{% endif %}
+
+<div class="card">
+  <h3>Bildirişlər</h3>
+  {% for n in notes %}
+  <div style="padding:6px 0;border-bottom:1px solid #eee;{% if not n.is_read %}font-weight:600{% endif %}">
+    <a href="{{ n.link }}">{{ n.message }}</a>
+    <span class="muted">{{ n.created_at.strftime('%d.%m.%Y %H:%M') }}</span>
+    {% if not n.is_read %}
+    <form method="post" action="{{ url_for('main.mark_read', nid=n.id) }}" class="inline">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button type="submit" style="padding:2px 8px">Oxundu</button>
+    </form>
+    {% endif %}
+  </div>
+  {% else %}<p class="muted">Bildiriş yoxdur.</p>{% endfor %}
+</div>
+{% endblock %}

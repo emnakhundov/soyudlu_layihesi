@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}İstifadəçilər{% endblock %}
+{% block content %}
+<h2>İstifadəçilər</h2>
+<div class="card">
+  <h3>Yeni istifadəçi</h3>
+  <form method="post" action="{{ url_for('admin.create_user') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="grid">
+      <div><label>İstifadəçi adı</label><input name="username" required></div>
+      <div><label>Ad, soyad</label><input name="full_name"></div>
+      <div><label>E-poçt</label><input name="email" type="email"></div>
+      <div><label>Rollar (Ctrl ilə çoxlu seçim)</label>
+        <select name="role_ids" multiple size="4">
+          {% for r in roles %}<option value="{{ r.id }}">{{ r.name }}</option>{% endfor %}
+        </select></div>
+    </div>
+    <button type="submit">Yarat (müvəqqəti parol göstəriləcək)</button>
+  </form>
+</div>
+
+<div class="card">
+<table>
+  <tr><th>İstifadəçi</th><th>Rollar</th><th>2FA</th><th>Status</th><th>Əməliyyat</th></tr>
+  {% for u in users %}
+  <tr>
+    <td>{{ u.username }}<br><span class="muted">{{ u.full_name }}</span></td>
+    <td>
+      <form method="post" action="{{ url_for('admin.set_roles', uid=u.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <select name="role_ids" multiple size="3">
+          {% for r in roles %}<option value="{{ r.id }}" {% if r in u.roles %}selected{% endif %}>{{ r.name }}</option>{% endfor %}
+        </select>
+        <button type="submit">Yadda saxla</button>
+      </form>
+    </td>
+    <td>{{ 'Aktiv' if u.is_2fa_enabled else 'Yoxdur' }}</td>
+    <td>
+      {{ 'Aktiv' if u.is_active else 'Deaktiv' }}
+      {% if u.is_locked() %}<br><span class="muted">Bloklu</span>{% endif %}
+      {% if u.force_password_change %}<br><span class="muted">Parol dəyişməlidir</span>{% endif %}
+    </td>
+    <td>
+      {% if u.id != current_user.id %}
+        <form method="post" action="{{ url_for('admin.user_action', uid=u.id, action='toggle') }}" class="inline">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button type="submit">Aktiv/Deaktiv</button></form>
+        <form method="post" action="{{ url_for('admin.user_action', uid=u.id, action='reset-2fa') }}" class="inline">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button type="submit">2FA sıfırla</button></form>
+        <form method="post" action="{{ url_for('admin.user_action', uid=u.id, action='delete') }}" class="inline">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button type="submit" class="danger">Sil</button></form>
+      {% endif %}
+    </td>
+  </tr>
+  {% endfor %}
+</table>
+</div>
+{% endblock %}

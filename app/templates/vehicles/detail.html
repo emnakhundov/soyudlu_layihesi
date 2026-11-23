@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}{{ v.plate }}{% endblock %}
+{% block content %}
+<h2>{{ v.plate }} — {{ v.make }} {{ v.model }}</h2>
+<div class="card">
+  <p>İl: {{ v.year or '—' }} · Yürüş: {{ v.mileage or 0 }} km · Şöbə: {{ v.department or '—' }} · Status: {{ v.status }}</p>
+</div>
+<div class="card">
+  <h3>Təmir tarixçəsi</h3>
+  <table>
+    <tr><th>No</th><th>Başlıq</th><th>Prioritet</th><th>Status</th><th>Tarix</th></tr>
+    {% for r in repairs %}
+    <tr>
+      <td><a href="{{ url_for('repairs.detail', rid=r.id) }}">{{ r.number }}</a></td>
+      <td>{{ r.title }}</td><td>{{ r.priority }}</td><td>{{ r.status }}</td>
+      <td>{{ r.created_at.strftime('%d.%m.%Y') }}</td>
+    </tr>
+    {% else %}
+    <tr><td colspan="5" class="muted">Təmir müraciəti yoxdur.</td></tr>
+    {% endfor %}
+  </table>
+</div>
+{% endblock %}

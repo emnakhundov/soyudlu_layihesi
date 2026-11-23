@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Audit{% endblock %}
+{% block content %}
+<h2>Audit jurnalı</h2>
+<p class="muted">Son 300 qeyd. Bu jurnal yalnız oxunur; tətbiq daxilində dəyişdirilmək və ya silinmək mümkün deyil.</p>
+<div class="card">
+<table>
+  <tr><th>Tarix</th><th>İstifadəçi</th><th>Əməliyyat</th><th>Hədəf</th><th>Təfərrüat</th><th>IP</th></tr>
+  {% for l in logs %}
+  <tr>
+    <td>{{ l.created_at.strftime('%d.%m.%Y %H:%M:%S') }}</td>
+    <td>{{ l.user.username if l.user else '—' }}</td>
+    <td>{{ l.action }}</td><td>{{ l.target }}</td><td>{{ l.details }}</td><td>{{ l.ip or '' }}</td>
+  </tr>
+  {% else %}
+  <tr><td colspan="6" class="muted">Qeyd yoxdur.</td></tr>
+  {% endfor %}
+</table>
+</div>
+{% endblock %}

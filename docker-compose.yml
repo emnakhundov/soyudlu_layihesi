@@ -1,0 +1,9 @@
+services:
+  esd:
+    build: .
+    env_file: .env
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./instance:/app/instance
+    restart: unless-stopped

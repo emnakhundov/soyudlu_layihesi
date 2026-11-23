@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Təmir{% endblock %}
+{% block content %}
+<h2>Təmir müraciətləri</h2>
+{% if current_user.has_permission('repair.create') %}
+<div class="card">
+  <h3>Yeni müraciət</h3>
+  <form method="post" action="{{ url_for('repairs.create') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="grid">
+      <div><label>Avtomobil</label>
+        <select name="vehicle_id" required>
+          {% for v in vehicles %}<option value="{{ v.id }}">{{ v.plate }} {{ v.make }} {{ v.model }}</option>{% endfor %}
+        </select></div>
+      <div><label>Nasazlıq başlığı</label><input name="title" required></div>
+      <div><label>Prioritet</label>
+        <select name="priority">{% for p in priorities %}<option>{{ p }}</option>{% endfor %}</select></div>
+    </div>
+    <label>Təsvir</label>
+    <textarea name="description" rows="3"></textarea>
+    <button type="submit">Müraciət yarat</button>
+  </form>
+</div>
+{% endif %}
+<div class="card">
+  <form method="get" class="inline">
+    <select name="status" onchange="this.form.submit()" style="width:auto">
+      <option value="">Bütün statuslar</option>
+      {% for s in statuses %}<option value="{{ s }}" {% if s == selected %}selected{% endif %}>{{ s }}</option>{% endfor %}
+    </select>
+  </form>
+  <a class="btn" href="{{ url_for('repairs.export_csv') }}" style="float:right">CSV ixrac</a>
+  <table style="margin-top:12px">
+    <tr><th>No</th><th>Avtomobil</th><th>Başlıq</th><th>Prioritet</th><th>Status</th><th>İcraçı</th></tr>
+    {% for r in repairs %}
+    <tr>
+      <td><a href="{{ url_for('repairs.detail', rid=r.id) }}">{{ r.number }}</a></td>
+      <td>{{ r.vehicle.plate }}</td><td>{{ r.title }}</td><td>{{ r.priority }}</td>
+      <td>{{ r.status }}</td><td>{{ r.assignee.username if r.assignee else '—' }}</td>
+    </tr>
+    {% else %}
+    <tr><td colspan="6" class="muted">Müraciət yoxdur.</td></tr>
+    {% endfor %}
+  </table>
+</div>
+{% endblock %}

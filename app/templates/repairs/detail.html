@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block title %}{{ r.number }}{% endblock %}
+{% block content %}
+<h2>{{ r.number }} — {{ r.title }}</h2>
+<div class="card">
+  <p><strong>Avtomobil:</strong> <a href="{{ url_for('vehicles.detail', vid=r.vehicle_id) }}">{{ r.vehicle.plate }}</a>
+     · <strong>Prioritet:</strong> {{ r.priority }} · <strong>Status:</strong> {{ r.status }}</p>
+  <p><strong>Yaradan:</strong> {{ r.created_by.username }} ({{ r.created_at.strftime('%d.%m.%Y %H:%M') }})</p>
+  <p><strong>İcraçı:</strong> {{ r.assignee.username if r.assignee else '—' }}</p>
+  {% if r.description %}<p>{{ r.description }}</p>{% endif %}
+  {% if r.assignment_notes %}<p class="muted">Tapşırıq qeydi: {{ r.assignment_notes }}</p>{% endif %}
+  {% if r.reject_reason %}<p style="color:#9b2c2c"><strong>Son rədd səbəbi:</strong> {{ r.reject_reason }}</p>{% endif %}
+  {% if r.completion_notes %}<p class="muted">Tamamlanma qeydi: {{ r.completion_notes }}</p>{% endif %}
+</div>
+
+<div class="card">
+  <h3>İş tarixçəsi</h3>
+  <table>
+    <tr><th>Tarix</th><th>İstifadəçi</th><th>Status</th><th>Qeyd</th><th>Ehtiyat hissələr</th></tr>
+    {% for u in r.updates %}
+    <tr><td>{{ u.created_at.strftime('%d.%m.%Y %H:%M') }}</td><td>{{ u.user.username }}</td>
+        <td>{{ u.status_after }}</td><td>{{ u.note }}</td><td>{{ u.parts_used }}</td></tr>
+    {% else %}
+    <tr><td colspan="5" class="muted">Hələ qeyd yoxdur.</td></tr>
+    {% endfor %}
+  </table>
+</div>
+
+{% if current_user.has_permission('repair.assign') and r.status not in final %}
+<div class="card">
+  <h3>İcraçını təyin et</h3>
+  <form method="post" action="{{ url_for('repairs.assign', rid=r.id) }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <select name="assignee_id" required>
+      {% for u in assignees %}<option value="{{ u.id }}">{{ u.username }} ({{ u.full_name }})</option>{% endfor %}
+    </select>
+    <textarea name="notes" rows="2" placeholder="Tapşırıq qeydləri"></textarea>
+    <button type="submit">Təyin et</button>
+  </form>
+</div>
+{% endif %}
+
+{% if r.status in workable and (r.assignee_id == current_user.id or current_user.has_permission('repair.assign')) and current_user.has_permission('repair.update') %}
+<div class="card">
+  <h3>İş qeydi əlavə et</h3>
+  <form method="post" action="{{ url_for('repairs.update', rid=r.id) }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <label>Qeyd</label><textarea name="note" rows="2" required></textarea>
+    <label>İstifadə olunan ehtiyat hissələr</label><input name="parts_used">
+    <label>Status</label>
+    <select name="status"><option>Təmirdə</option><option>Gözləmədə</option></select>
+    <button type="submit">Yadda saxla</button>
+  </form>
+</div>
+{% if r.assignee_id == current_user.id %}
+<div class="card">
+  <h3>İşi tamamla</h3>
+  <form method="post" action="{{ url_for('repairs.complete', rid=r.id) }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <textarea name="completion_notes" rows="2" placeholder="Nəticə"></textarea>
+    <button type="submit">Tamamlandı kimi göndər</button>
+  </form>
+</div>
+{% endif %}
+{% endif %}
+
+{% if current_user.has_permission('repair.approve') and r.status == 'Tamamlandı' %}
+<div class="card">
+  <h3>Təsdiq</h3>
+  <form method="post" action="{{ url_for('repairs.approve', rid=r.id) }}" class="inline">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button type="submit">Təsdiqlə</button>
+  </form>
+  <form method="post" action="{{ url_for('repairs.reject', rid=r.id) }}" style="margin-top:12px">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input name="reason" placeholder="Rədd səbəbi (mütləqdir)" required>
+    <button type="submit" class="danger">Rədd et (icraya qaytar)</button>
+  </form>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Rollar{% endblock %}
+{% block content %}
+<h2>Rollar və icazələr</h2>
+<div class="card">
+  <h3>Yeni rol</h3>
+  <form method="post" action="{{ url_for('admin.create_role') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <label>Ad</label><input name="name" required>
+    <label>Təsvir</label><input name="description">
+    <label>İcazələr</label>
+    <div class="grid">
+      {% for p in permissions %}
+      <label style="font-weight:normal"><input type="checkbox" name="permission_ids" value="{{ p.id }}" style="width:auto"> {{ p.code }} – {{ p.description }}</label>
+      {% endfor %}
+    </div>
+    <button type="submit">Rol yarat</button>
+  </form>
+</div>
+<div class="card">
+<table>
+  <tr><th>Rol</th><th>Təsvir</th><th>İcazələr</th></tr>
+  {% for r in roles %}
+  <tr><td>{{ r.name }}</td><td>{{ r.description }}</td>
+      <td>{{ r.permissions | map(attribute='code') | join(', ') if r.name != 'Super Admin' else 'Bütün icazələr' }}</td></tr>
+  {% endfor %}
+</table>
+</div>
+{% endblock %}

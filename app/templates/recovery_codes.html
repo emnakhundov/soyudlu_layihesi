@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}Bərpa kodları{% endblock %}
+{% block content %}
+<div class="card" style="max-width:420px;margin:30px auto">
+  <h2>Bərpa kodları</h2>
+  <p>Bu kodları təhlükəsiz yerdə saxlayın. Hər kod yalnız bir dəfə işləyir və yalnız bu səhifədə göstərilir.</p>
+  <ul>{% for c in codes %}<li><code>{{ c }}</code></li>{% endfor %}</ul>
+  <a class="btn" href="{{ url_for('auth.complete_login') }}">Saxladım, davam et</a>
+</div>
+{% endblock %}

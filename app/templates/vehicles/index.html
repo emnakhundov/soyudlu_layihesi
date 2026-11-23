@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Avtomobillər{% endblock %}
+{% block content %}
+<h2>Avtomobillər</h2>
+{% if current_user.has_permission('vehicle.manage') %}
+<div class="card">
+  <h3>Yeni avtomobil</h3>
+  <form method="post" action="{{ url_for('vehicles.create') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="grid">
+      <div><label>Qeydiyyat nişanı</label><input name="plate" required></div>
+      <div><label>Marka</label><input name="make"></div>
+      <div><label>Model</label><input name="model"></div>
+      <div><label>İstehsal ili</label><input name="year" type="number"></div>
+      <div><label>Ümumi yürüş (km)</label><input name="mileage" type="number" value="0"></div>
+      <div><label>Şöbə</label><input name="department"></div>
+    </div>
+    <button type="submit">Əlavə et</button>
+  </form>
+</div>
+{% endif %}
+<div class="card">
+<table>
+  <tr><th>Nişan</th><th>Marka / Model</th><th>İl</th><th>Şöbə</th><th>Status</th></tr>
+  {% for v in vehicles %}
+  <tr>
+    <td><a href="{{ url_for('vehicles.detail', vid=v.id) }}">{{ v.plate }}</a></td>
+    <td>{{ v.make }} {{ v.model }}</td><td>{{ v.year or '' }}</td>
+    <td>{{ v.department }}</td><td>{{ v.status }}</td>
+  </tr>
+  {% else %}
+  <tr><td colspan="5" class="muted">Avtomobil yoxdur.</td></tr>
+  {% endfor %}
+</table>
+</div>
+{% endblock %}

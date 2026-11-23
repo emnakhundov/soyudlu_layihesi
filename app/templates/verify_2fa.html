@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}2FA{% endblock %}
+{% block content %}
+<div class="card" style="max-width:380px;margin:40px auto">
+  <h2>Doğrulama kodu</h2>
+  <p class="muted">Authenticator tətbiqindəki 6 rəqəmli kodu və ya istifadə olunmamış bərpa kodunu daxil edin.</p>
+  <form method="post">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input name="code" required autofocus autocomplete="one-time-code">
+    <button type="submit">Daxil ol</button>
+  </form>
+</div>
+{% endblock %}

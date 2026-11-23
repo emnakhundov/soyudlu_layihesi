@@ -1,36 +1,19 @@
 @echo off
-setlocal
+setlocal EnableExtensions
 title Soyudlu Layihesi
 cd /d "%~dp0"
 
 set "BASE_URL=https://raw.githubusercontent.com/emnakhundov/soyudlu_layihesi/main"
-
-echo ============================================
-echo   Soyudlu Layihesi - check, download, start
-echo ============================================
-echo.
-
-rem ===== 0. Check GitHub connection =====
-echo [..] Checking GitHub connection...
-set "TESTURL=%BASE_URL%/config.py"
-curl.exe -fsSL -o "%TEMP%\esd_test.tmp" "%TESTURL%" >nul 2>&1
-if errorlevel 1 (
-  powershell -NoProfile -ExecutionPolicy Bypass -Command "[Net.ServicePointManager]::SecurityProtocol=[Net.SecurityProtocolType]::Tls12; try { Invoke-WebRequest -Uri '%TESTURL%' -OutFile '%TEMP%\esd_test.tmp' -UseBasicParsing -ErrorAction Stop; exit 0 } catch { exit 1 }" >nul 2>&1
-)
-if errorlevel 1 (
-  echo [ERROR] Cannot download from GitHub:
-  echo         %TESTURL%
-  echo Check internet connection. Open the link in a browser:
-  echo - If it shows Python code, the link works.
-  echo - If it shows 404, the files are not pushed to the repo yet.
-  pause
-  exit /b 1
-)
-echo [OK] GitHub reachable.
-echo.
-
-rem ===== 1. Check required files, download missing ones =====
 set "MISSING=0"
+set "PY="
+
+echo ============================================
+echo   Soyudlu Layihesi - automatic setup and start
+echo ============================================
+echo.
+
+rem ===== 1. Project files: download the ones that are missing =====
+echo [1/5] Checking project files...
 for %%F in (
   "config.py" "run.py" "wsgi.py" "requirements.txt" ".env.example"
   "app\__init__.py" "app\extensions.py" "app\models.py" "app\security.py" "app\seed.py"
@@ -47,52 +30,51 @@ for %%F in (
   "app\static\img\starmining_logo_blue.png"
 ) do call :ensure %%F
 
-if "%MISSING%"=="1" (
-  echo.
-  echo [ERROR] Some files could not be downloaded. See messages above.
-  pause
-  exit /b 1
-)
-echo [OK] All project files are present.
+if "%MISSING%"=="1" goto :fail_files
+echo [OK] Project files ready.
 echo.
 
-rem ===== 2. Find Python =====
-set "PY="
-python -c "import sys" >nul 2>&1
-if not errorlevel 1 set "PY=python"
+rem ===== 2. Python 3.10+: find it, or install it automatically =====
+echo [2/5] Checking Python...
+call :find_python
 if not defined PY (
-  py -3 -c "import sys" >nul 2>&1
-  if not errorlevel 1 set "PY=py -3"
+  echo [..] Python not found. Installing Python 3.12 for the current user...
+  call :install_python
+  call :find_python
 )
-if not defined PY (
-  echo [ERROR] Python not found. Install Python 3.10+ from python.org
-  echo         and tick "Add python.exe to PATH" during setup.
-  pause
-  exit /b 1
-)
+if not defined PY goto :fail_python
 echo [OK] Python: %PY%
+echo.
 
 rem ===== 3. Virtual environment =====
-if not exist "venv\Scripts\python.exe" (
-  echo [..] Creating virtual environment...
-  %PY% -m venv venv
-  if errorlevel 1 goto :fail
+echo [3/5] Preparing virtual environment...
+if exist "venv\Scripts\python.exe" (
+  "venv\Scripts\python.exe" -c "import sys" >nul 2>&1
+  if errorlevel 1 (
+    echo [..] Existing virtual environment is broken. Recreating it...
+    rmdir /s /q venv
+  )
 )
-set "VPY=venv\Scripts\python.exe"
-
-rem ===== 4. Dependencies =====
-echo [..] Installing dependencies...
+if not exist "venv\Scripts\python.exe" (
+  "%PY%" -m venv venv
+  if errorlevel 1 goto :fail_step
+)
+set "VPY=%CD%\venv\Scripts\python.exe"
+echo [OK] Virtual environment ready.echo [4/5] Installing dependencies...
 "%VPY%" -m pip install --disable-pip-version-check -q -r requirements.txt
-if errorlevel 1 goto :fail
+if errorlevel 1 goto :fail_step
+"%VPY%" -c "import waitress" >nul 2>&1
+if errorlevel 1 "%VPY%" -m pip install --disable-pip-version-check -q waitress==3.0.0
+if errorlevel 1 goto :fail_step
 echo [OK] Dependencies ready.
+echo.
 
-rem ===== 5. Config and database =====
+rem ===== 5. Config, database, start =====
+echo [5/5] Preparing configuration and database...
 if not exist ".env" copy /y ".env.example" ".env" >nul
-echo [..] Preparing database...
 "%VPY%" run.py init-db
-if errorlevel 1 goto :fail
+if errorlevel 1 goto :fail_step
 echo [OK] Database ready.
-
 echo.
 echo ============================================
 echo   Open in browser: http://127.0.0.1:8000/login
@@ -106,13 +88,61 @@ echo Server stopped.
 pause
 exit /b 0
 
-:fail
+:fail_files
 echo.
-echo [ERROR] A step failed. Read the message above.
+echo [ERROR] Some project files could not be downloaded from GitHub.
+echo Check the internet connection and that the repo is public and has all files.
 pause
 exit /b 1
 
-rem ===== Subroutine: download file if it does not exist =====
+:fail_python
+echo.
+echo [ERROR] Python could not be installed automatically.
+echo Install Python 3.12 manually from https://www.python.org/downloads/
+echo and tick "Add python.exe to PATH", then run this file again.
+pause
+exit /b 1
+
+:fail_step
+echo.
+echo [ERROR] A setup step failed. Read the messages above.
+pause
+exit /b 1
+
+rem ===================== SUBROUTINES =====================
+
+:find_python
+set "PY="
+call :try_py "%LOCALAPPDATA%\Programs\Python\Python312\python.exe"
+call :try_py "%LOCALAPPDATA%\Programs\Python\Python311\python.exe"
+call :try_py "%LOCALAPPDATA%\Programs\Python\Python313\python.exe"
+call :try_py python
+call :try_py py
+goto :eof
+
+:try_py
+if defined PY goto :eof
+"%~1" -c "import sys; sys.exit(0 if sys.version_info[:2] >= (3, 10) else 1)" >nul 2>&1
+if not errorlevel 1 set "PY=%~1"
+goto :eof
+
+:install_python
+where winget >nul 2>&1
+if not errorlevel 1 (
+  winget install --id Python.Python.3.12 -e --scope user --silent --accept-package-agreements --accept-source-agreements
+)
+call :find_python
+if defined PY goto :eof
+
+echo [..] Downloading Python installer from python.org...
+set "PYINST=%TEMP%\python-3.12.7-amd64.exe"
+curl.exe -fL --retry 3 -o "%PYINST%" "https://www.python.org/ftp/python/3.12.7/python-3.12.7-amd64.exe"
+if errorlevel 1 goto :eof
+
+echo [..] Running Python installer (this can take a minute)...
+"%PYINST%" /quiet InstallAllUsers=0 PrependPath=1 Include_pip=1 Include_launcher=0 Include_test=0
+goto :eof
+
 :ensure
 set "REL=%~1"
 if exist "%REL%" goto :eof

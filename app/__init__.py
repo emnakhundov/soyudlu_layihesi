@@ -80,5 +80,10 @@ def create_app(config_class=Config):
         response.headers["X-Frame-Options"] = "DENY"
         response.headers["Referrer-Policy"] = "same-origin"
         return response
+    @app.after_request
+    def force_utf8(response):
+        if response.mimetype == "text/html":
+            response.headers["Content-Type"] = "text/html; charset=utf-8"
+        return response
 
     return app

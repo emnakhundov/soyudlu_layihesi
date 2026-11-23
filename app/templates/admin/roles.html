@@ -9,7 +9,7 @@
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <label>Rolun adı</label>
     <input name="name" required>
-    <label>İcazələr</label>
+    <label>Funksiyalar</label>
     <div class="grid">
       {% for p in permissions %}
       <label style="font-weight:normal"><input type="checkbox" name="permission_ids" value="{{ p.id }}" style="width:auto"> {{ p.description }}</label>
@@ -21,9 +21,25 @@
 
 <div class="card">
   <table>
-    <tr><th>Rolun adı</th></tr>
+    <tr>
+      <th style="width:25%">Rolun adı</th>
+      <th>Funksiyalar</th>
+    </tr>
     {% for r in roles %}
-    <tr><td>{{ r.name }}</td></tr>
+    <tr>
+      <td>{{ r.name }}</td>
+      <td>
+        {% if r.name == 'Super Admin' %}
+          B&uuml;t&uuml;n funksiyalar
+        {% else %}
+          {% for p in r.permissions | sort(attribute='code') %}
+            {{ p.description }}<br>
+          {% else %}
+            <span class="muted">Funksiya təyin edilməyib</span>
+          {% endfor %}
+        {% endif %}
+      </td>
+    </tr>
     {% endfor %}
   </table>
 </div>
